@@ -31,7 +31,7 @@ jobs:
         run: cargo build --release --target ${{ matrix.platform }}
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}-binary
           path: target/${{ matrix.platform }}/release/your_binary_name # 替换 your_binary_name 为你的可执行文件名称
