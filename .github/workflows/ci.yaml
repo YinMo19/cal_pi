@@ -1,45 +1,67 @@
-name: Build and Release
-
+name: build
 on:
-  push:
-    branches:
-      - main
-
+  workflow_dispatch: {}
 jobs:
   build:
+    name: build
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        build: [linux, macos, windows]
         include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-          - os: macos-latest
+          - build: linux
+            os: ubuntu-18.04
+            rust: nightly
+            target: x86_64-unknown-linux-musl
+            archive-name: sgf-render-linux.tar.gz
+          - build: macos
+            os: macos-latest
+            rust: nightly
             target: x86_64-apple-darwin
+            archive-name: sgf-render-macos.tar.gz
+          - build: windows
+            os: windows-2019
+            rust: nightly-x86_64-msvc
+            target: x86_64-pc-windows-msvc
+            archive-name: sgf-render-windows.7z
+      fail-fast: false
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Setup Rust
+      - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-          rust-version: stable
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
           target: ${{ matrix.target }}
 
-      - name: Build
-        run: cargo build --target ${{ matrix.target }} --release
+      - name: Build binary
+        run: cargo build --verbose --release --target ${{ matrix.target }}
+        env:
+          RUST_BACKTRACE: 1
 
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/
+      - name: Strip binary (linux and macos)
+        if: matrix.build == 'linux' || matrix.build == 'macos'
+        run: strip "target/${{ matrix.target }}/release/sgf-render"
 
-      - name: Create Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
+      - name: Build archive
+        shell: bash
+        run: |
+          mkdir archive
+          cp LICENSE README.md archive/
+          cd archive
+          if [ "${{ matrix.build }}" = "windows" ]; then
+            cp "../target/${{ matrix.target }}/release/sgf-render.exe" ./
+            7z a "${{ matrix.archive-name }}" LICENSE README.md sgf-render.exe
+          else
+            cp "../target/${{ matrix.target }}/release/sgf-render" ./
+            tar -czf "${{ matrix.archive-name }}" LICENSE README.md sgf-render
+          fi
+      - name: Upload archive
+        uses: actions/upload-artifact@v1
         with:
-          files: |
-            target/${{ matrix.target }}/release/*.*
+          name: ${{ matrix.archive-name }}
+          path: archive/${{ matrix.archive-name }}
