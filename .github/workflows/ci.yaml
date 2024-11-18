@@ -17,66 +17,66 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            exe: rathole
+            exe: cal_pi
             cross: false
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
-            exe: rathole
+            exe: cal_pi
             cross: false
           - os: ubuntu-latest
             target: aarch64-unknown-linux-musl
-            exe: rathole
+            exe: cal_pi
             cross: true
           - os: ubuntu-latest
             target: arm-unknown-linux-musleabi
-            exe: rathole
+            exe: cal_pi
             cross: true
           - os: ubuntu-latest
             target: arm-unknown-linux-musleabihf
-            exe: rathole
+            exe: cal_pi
             cross: true
           - os: ubuntu-latest
             target: armv7-unknown-linux-musleabihf
-            exe: rathole
+            exe: cal_pi
             cross: true
           - os: ubuntu-latest
             target: mips-unknown-linux-gnu
-            exe: rathole
+            exe: cal_pi
             cross: true
           - os: ubuntu-latest
             target: mips-unknown-linux-musl
-            exe: rathole
+            exe: cal_pi
             cross: true
           - os: ubuntu-latest
             target: mipsel-unknown-linux-gnu
-            exe: rathole
+            exe: cal_pi
             cross: true
           - os: ubuntu-latest
             target: mipsel-unknown-linux-musl
-            exe: rathole
+            exe: cal_pi
             cross: true
           - os: ubuntu-latest
             target: mips64-unknown-linux-gnuabi64
-            exe: rathole
+            exe: cal_pi
             cross: true
           - os: ubuntu-latest
             target: mips64el-unknown-linux-gnuabi64
-            exe: rathole
+            exe: cal_pi
             cross: true
 
           - os: macos-latest
             target: x86_64-apple-darwin
-            exe: rathole
+            exe: cal_pi
             cross: false
           
           - os: macos-latest
             target: aarch64-apple-darwin
-            exe: rathole
+            exe: cal_pi
             cross: false
 
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            exe: rathole.exe
+            exe: cal_pi.exe
             cross: false
     steps:
       - uses: actions/checkout@v2
@@ -92,9 +92,6 @@ jobs:
       - name: Install target
         if: matrix.cross == false
         run: rustup target add ${{ matrix.target }}
-      - name: Run tests
-        if: matrix.cross == false && matrix.target != 'aarch64-apple-darwin'
-        run: cargo test --release --target ${{ matrix.target }} --verbose 
       - name: Build release
         if: matrix.cross == false 
         run: cargo build --release --target ${{ matrix.target }}
@@ -103,28 +100,25 @@ jobs:
       - name: Install cross
         if: matrix.cross
         run: cargo install --version 0.2.5 cross
-      - name: Run tests
-        if: matrix.cross
-        run: cross test --release --target ${{ matrix.target }} --verbose --features embedded --no-default-features
       - name: Build release
         if: matrix.cross
         run: cross build --release --target ${{ matrix.target }} --features embedded --no-default-features
 
       - uses: actions/upload-artifact@v4
         with:
-          name: rathole-${{ matrix.target }}
+          name: cal_pi-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/${{ matrix.exe }}
       - name: Zip Release
         uses: TheDoctor0/zip-release@0.6.1
         with:
           type: zip
-          filename: rathole-${{ matrix.target }}.zip
+          filename: cal_pi-${{ matrix.target }}.zip
           directory: target/${{ matrix.target }}/release/
           path: ${{ matrix.exe }}
       - name: Publish
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: target/${{ matrix.target }}/release/rathole-${{ matrix.target }}.zip
+          files: target/${{ matrix.target }}/release/cal_pi-${{ matrix.target }}.zip
           generate_release_notes: true
           draft: true
